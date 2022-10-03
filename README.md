@@ -1,6 +1,6 @@
 # Golden Image Finalizer
 
-Shamelessly forked and modified on the original wonderful work by @jzavcer at his [repository](https://github.com/jzavcer/VDI-Windows-Finalize)
+Shamelessly forked and modified on the original wonderful work by @jzavcer at his [repository](https://github.com/jzavcer/VDI-Windows-Finalizer)
 
 ## Usage
 

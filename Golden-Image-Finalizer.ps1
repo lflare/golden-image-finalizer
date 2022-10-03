@@ -44,7 +44,7 @@ Param (
 #---------------------------------------------------------[Initialisations]--------------------------------------------------------
 
 # Set Error Action to Silently Continue
-$ErrorActionPreference = 'SilentlyContinue'
+$ErrorActionPreference = 'Inquire'
 
 # Import Modules & Snap-ins
 Install-Module PSLogging -Scope CurrentUser

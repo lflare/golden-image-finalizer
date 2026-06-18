@@ -1,4 +1,5 @@
 #requires -version 4
+#requires -RunAsAdministrator
 
 <#
 .SYNOPSIS
@@ -43,8 +44,8 @@ Param (
 
 #---------------------------------------------------------[Initialisations]--------------------------------------------------------
 
-# Set Error Action to Silently Continue
-$ErrorActionPreference = 'Inquire'
+# Log errors and keep going; this script runs unattended, so never prompt on error
+$ErrorActionPreference = 'Continue'
 
 # Import Modules & Snap-ins
 Install-Module PSLogging -Scope CurrentUser
@@ -113,10 +114,11 @@ try {
 
 	# create the necessary registry entries for the disk cleanup
 	Write-LogInfo -LogPath $sLogFile -Message "Configuring CleanMgr.exe automation settings"
-	New-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\VolumeCaches\Internet Cache Files' -Name StateFlags0001 -Value 2 -PropertyType DWord
-	New-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\VolumeCaches\Update Cleanup' -Name StateFlags0001 -Value 2 -PropertyType DWord
-	New-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\VolumeCaches\Temporary Files' -Name StateFlags0001 -Value 2 -PropertyType DWord
-	New-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\VolumeCaches\Windows Error Files' -Name StateFlags0001 -Value 2 -PropertyType DWord
+	# Enumerate the VolumeCaches handlers that actually exist on this build instead of
+	# hardcoding names, which vary by Windows version and fail with PathNotFound.
+	Get-ChildItem -Path 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\VolumeCaches' | ForEach-Object {
+		New-ItemProperty -Path $_.PSPath -Name StateFlags0001 -Value 2 -PropertyType DWord -Force | Out-Null
+	}
 	
 	# Start CleanMgr.exe
 	Write-LogInfo -LogPath $sLogFile -Message "Starting new process for cleanmgr.exe"
@@ -181,9 +183,11 @@ $EventLogs | ForEach-Object -Process {
 Clear-History
 Remove-Item (Get-PSReadlineOption).HistorySavePath
 
-# Delete self script
-Write-LogInfo -LogPath $sLogFile -Message "Deleting cleanup script -> $PSCommandPath"
-Remove-Item -Recurse -Force $PSCommandPath
+# Delete self script (skipped when run via iex, where there is no file on disk)
+if ($PSCommandPath) {
+    Write-LogInfo -LogPath $sLogFile -Message "Deleting cleanup script -> $PSCommandPath"
+    Remove-Item -Recurse -Force $PSCommandPath
+}
 
 # Remove PSTranscripts
 try {
